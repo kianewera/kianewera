@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin - Toko Digital</title><link rel="stylesheet" href="/style.css"></head>
+<body><header><div class="wrap nav"><strong>TOKO<span>DIGITAL</span> / ADMIN</strong><a href="/">Lihat toko</a></div></header>
+<main class="wrap admin">
+<section id="loginBox" class="panel"><h1>Login admin</h1><p class="muted">Masuk untuk mengelola katalog toko.</p>
+<form id="loginForm"><label>Email admin</label><input id="email" type="email" required autocomplete="username">
+<label>Password</label><input id="password" type="password" required autocomplete="current-password">
+<button class="btn" type="submit">Masuk</button></form><p id="loginMsg" class="msg"></p></section>
+<section id="dashboard" hidden><div class="row"><h1>Dashboard admin</h1><button id="logout" class="btn secondary">Keluar</button></div>
+<div class="panel"><h2>Tambah produk</h2><form id="productForm"><label>Nama produk</label><input id="name" required maxlength="80">
+<label>Deskripsi</label><textarea id="description" maxlength="300"></textarea>
+<label>Harga (rupiah)</label><input id="price" type="number" min="0" step="1" required>
+<button class="btn" type="submit">Simpan produk</button></form><p id="productMsg" class="msg"></p></div>
+<div class="panel"><h2>Daftar produk</h2><div id="adminProducts"></div></div>
+<div class="panel"><h2>Status API pembayaran</h2><p id="apiStatus" class="muted">Memeriksa konfigurasi server…</p><p class="muted">Tambahkan kredensial provider ke file .env di server. Jangan masukkan secret key di browser.</p></div>
+</section></main>
+<script>
+const $=id=>document.getElementById(id);let token=sessionStorage.getItem("adminToken");
+async function api(url,opts={}){opts.headers={...(opts.headers||{}),...(token?{Authorization:"Bearer "+token}:{})};if(opts.body)opts.headers["Content-Type"]="application/json";const r=await fetch(url,opts);const data=await r.json();if(!r.ok)throw Error(data.error||"Terjadi kesalahan");return data;}
+function show(){ $("loginBox").hidden=!!token;$("dashboard").hidden=!token;if(token)load();}
+$("loginForm").addEventListener("submit",async e=>{e.preventDefault();$("loginMsg").textContent="Memeriksa…";try{const d=await api("/api/login",{method:"POST",body:JSON.stringify({email:$("email").value,password:$("password").value})});token=d.token;sessionStorage.setItem("adminToken",token);$("loginMsg").textContent="";show();}catch(err){$("loginMsg").textContent=err.message;}});
+$("logout").onclick=()=>{token=null;sessionStorage.removeItem("adminToken");show();};
+async function load(){try{const items=await api("/api/admin/products");const root=$("adminProducts");root.replaceChildren();if(!items.length)root.textContent="Belum ada produk.";items.forEach(p=>{const div=document.createElement("div");div.className="item";const span=document.createElement("span");span.textContent=p.name+" — Rp "+Number(p.price).toLocaleString("id-ID");const b=document.createElement("button");b.className="btn danger";b.textContent="Hapus";b.onclick=async()=>{if(confirm("Hapus produk ini?")){await api("/api/admin/products/"+p.id,{method:"DELETE"});load();}};div.append(span,b);root.append(div);});const s=await api("/api/payment/status");$("apiStatus").textContent=s.configured?"API key tersedia di server; integrasi pembayaran masih perlu adapter provider.": "API pembayaran belum dikonfigurasi."; }catch(e){token=null;sessionStorage.removeItem("adminToken");show();}}
+$("productForm").addEventListener("submit",async e=>{e.preventDefault();try{await api("/api/admin/products",{method:"POST",body:JSON.stringify({name:$("name").value,description:$("description").value,price:$("price").value})});$("productForm").reset();$("productMsg").textContent="Produk tersimpan.";load();}catch(err){$("productMsg").textContent=err.message;}});
+show();
+</script></body></html>

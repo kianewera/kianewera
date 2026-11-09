@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Toko Digital</title><link rel="stylesheet" href="/style.css"></head>
+<body><header><div class="wrap nav"><strong> TOKO<span>DIGITAL</span></strong><a href="/admin">Admin</a></div></header>
+<main class="wrap"><section class="hero"><p class="tag">TOKO ONLINE</p><h1>Belanja produk digital<br>jadi lebih mudah.</h1><p>Temukan produk pilihan dari toko kami.</p><a class="btn" href="#produk">Lihat produk</a></section>
+<h2 id="produk">Produk tersedia</h2><div id="products" class="grid"></div><p id="empty" class="muted">Belum ada produk. Admin dapat menambahkan produk melalui dashboard.</p>
+<footer>© <span id="year"></span> Toko Digital. Bukan situs resmi DANA atau lembaga keuangan.</footer></main>
+<script>
+document.getElementById("year").textContent=new Date().getFullYear();
+fetch("/api/products").then(r=>r.json()).then(items=>{
+ const root=document.getElementById("products");
+ document.getElementById("empty").hidden=items.length>0;
+ items.forEach(p=>{const el=document.createElement("article");el.className="product";
+ const h=document.createElement("h3");h.textContent=p.name;
+ const d=document.createElement("p");d.textContent=p.description;
+ const price=document.createElement("strong");price.textContent=new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(p.price);
+ el.append(h,d,price);root.append(el);});
+}).catch(()=>document.getElementById("empty").textContent="Produk belum dapat dimuat.");
+</script></body></html>
